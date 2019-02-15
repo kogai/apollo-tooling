@@ -44,6 +44,44 @@ function composeServices(services: ServiceDefinition[]) {
    * A map of base types to their owning service. Used by query planner to direct traffic.
    * This contains the base type's "owner". Any fields that extend this type in another service
    * are listed under "extensionFields". extensionFields are in the format { myField: my-service-name }
+   *
+   * Example services with resulting serviceMap shape
+   *
+   * ProductService:
+   * type Product {
+   *   sku: String!
+   *   color: String
+   * }
+   *
+   * ReviewService:
+   * extend type Product {
+   *   reviews: [Review!]!
+   * }
+   *
+   * ShippingService:
+   * extend type Product {
+   *   dimensions: [Dimensions!]
+   *   weight: Int
+   * }
+   *
+   * const serviceMap = {
+   *   Product: {
+   *     serviceName: "ProductService",
+   *     extensionFields: {
+   *       reviews: "ReviewService",
+   *       dimensions: "ShippingService",
+   *       weight: "ShippingService"
+   *     }
+   *   }
+   * }
+   */
+
+  /**
+   * XXX I want to rename this map to something that feels more directionally intutitive:
+   * typesMap
+   * typeToServiceMap
+   * typeWithExtensionsMap
+   * typeWithExtensionsToServiceMap
    */
   const serviceMap: {
     [typeName: string]: {
