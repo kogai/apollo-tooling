@@ -43,7 +43,7 @@
 // the server no longer needs to parse the signature or run its own signature
 // algorithm on it, and the details of the signature algorithm are now up to the
 // reporting agent.
-
+import { createHash } from "crypto";
 import { DocumentNode } from "graphql";
 import {
   printWithReducedWhitespace,
@@ -65,4 +65,10 @@ export function defaultEngineReportingSignature(
       removeAliases(hideLiterals(dropUnusedDefinitions(ast, operationName)))
     )
   );
+}
+
+export function hashForOperationSignature(operationSignature: string): string {
+  return createHash("sha256")
+    .update(operationSignature)
+    .digest("hex");
 }
