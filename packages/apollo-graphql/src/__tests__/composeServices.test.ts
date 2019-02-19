@@ -381,6 +381,21 @@ type Product {
     expect(product.getFields()["color"].serviceName).toEqual("serviceC");
   });
 
-  // FIXME: description more detailed
+  // Brainstorm result, these test cases should be reworded and properly defined
+
+  it("handles collisions on type extensions as expected", () => {});
+
+  it("handles collisions of base types expected (newest takes precedence)", () => {});
+
+  it("lists, non-null, interfaces, unions, input, enum types", () => {});
+
+  it("extending these -> lists, non-null, interfaces, unions, input, enums types", () => {});
+
+  it("using arguments (are they preserved, etc.)", () => {});
+
+  it("merges two+ schemas that only _extend_ query. should we ever be able to not define query", () => {});
+
+  it("custom scalars / extending them", () => {});
+
   it("handles collisions on type extensions as expected", () => {});
 });
