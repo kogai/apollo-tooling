@@ -35,6 +35,10 @@
       "<rootDir>/test/fixtures/",
       "<rootDir>/test/test-utils"
     ],
+    "snapshotSerializers": [
+      "<rootDir>/src/__tests__/snapshotSerializers/astSerializer.ts",
+      "<rootDir>/src/__tests__/snapshotSerializers/graphQLTypeSerializer.ts"
+    ],
     "moduleFileExtensions": [
       "ts",
       "js"

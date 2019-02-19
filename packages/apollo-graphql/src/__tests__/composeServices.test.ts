@@ -140,7 +140,10 @@ function composeServices(services: ServiceDefinition[]) {
            * definition is processed.
            */
           if (serviceMap[typeName]) {
-            serviceMap[typeName].extensionFields = fields;
+            serviceMap[typeName].extensionFields = {
+              ...serviceMap[typeName].extensionFields,
+              ...fields
+            };
           } else {
             serviceMap[typeName] = { extensionFields: fields };
           }
@@ -329,7 +332,6 @@ type Product {
     });
   });
 
-  // FIXME
   it("works with multiple extensions on the same type", () => {
     const serviceA = {
       typeDefs: gql`
@@ -356,7 +358,7 @@ type Product {
           color: String!
         }
       `,
-      name: "serviceB"
+      name: "serviceC"
     };
 
     const { schema, errors } = composeServices([serviceB, serviceA, serviceC]);
@@ -378,4 +380,7 @@ type Product {
     expect(product.getFields()["price"].serviceName).toEqual("serviceB");
     expect(product.getFields()["color"].serviceName).toEqual("serviceC");
   });
+
+  // FIXME: description more detailed
+  it("handles collisions on type extensions as expected", () => {});
 });
