@@ -1,11 +1,15 @@
 # Changelog
 
 ## Upcoming
-- Fix a bug where tagging a build will cause the tool to not be able to figure out where the git repo is [#944](https://github.com/apollographql/apollo-tooling/pull/944)
+
+- `apollo`
+
+  - Fix a bug where tagging a build will cause the tool to not be able to figure out where the git repo is [#944](https://github.com/apollographql/apollo-tooling/pull/944)
 
 - `apollo-language-server`
   - Added a warning when there are 0 files found in a project [#1007](https://github.com/apollographql/apollo-tooling/pull/1007)
   - Allow relative paths in includes/excludes globs [#1007](https://github.com/apollographql/apollo-tooling/pull/1007)
+  - Use generated Typescript types via client:codegen [#1016](https://github.com/apollographql/apollo-tooling/pull/1016)
 
 ## `apollo-codegen-typescript@0.32.7`, `apollo-codegen-scala@0.33.2`, `apollo-graphql@1.0.2`
 
