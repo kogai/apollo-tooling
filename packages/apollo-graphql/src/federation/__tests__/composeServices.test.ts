@@ -1,4 +1,8 @@
-import { GraphQLObjectType } from "graphql";
+import {
+  GraphQLObjectType,
+  GraphQLEnumType,
+  GraphQLInputObjectType
+} from "graphql";
 import gql from "graphql-tag";
 import { composeServices } from "../composeServices";
 
@@ -305,10 +309,112 @@ type Product {
     expect(product.getFields()["name"].serviceName).toEqual("serviceB");
   });
 
-  it("handles collisions of base types as expected (newest takes precedence)", () => {});
+  it("handles collisions of base types as expected (newest takes precedence)", () => {
+    const serviceA = {
+      typeDefs: gql`
+        type Product {
+          sku: String!
+          name: String!
+        }
+      `,
+      name: "serviceA"
+    };
+
+    const serviceB = {
+      typeDefs: gql`
+        type Product {
+          id: ID!
+          name: String!
+          price: Int!
+        }
+      `,
+      name: "serviceB"
+    };
+
+    const { schema, errors } = composeServices([serviceA, serviceB]);
+    expect(schema).toBeDefined();
+    expect(errors).toMatchInlineSnapshot(`
+Array [
+  [GraphQLError: There can be only one type named "Product".],
+  [GraphQLError: Field "Product.name" can only be defined once.],
+]
+`);
+
+    const product = schema.getType("Product") as GraphQLObjectType;
+
+    expect(product).toMatchInlineSnapshot(`
+type Product {
+  id: ID!
+  name: String!
+  price: Int!
+}
+`);
+  });
 
   // Maybe just test conflicts in types
-  it("lists, null, interfaces, unions, input, enum types", () => {});
+  // it("interfaces, unions", () => {});
+
+  describe("extending input and enum types behaves as expected", () => {
+    it("extends input types", () => {
+      const serviceA = {
+        typeDefs: gql`
+          input ProductInput {
+            sku: String!
+            name: String!
+          }
+        `,
+        name: "serviceA"
+      };
+
+      const serviceB = {
+        typeDefs: gql`
+          extend input ProductInput {
+            color: String!
+          }
+        `,
+        name: "serviceB"
+      };
+
+      const { schema, errors } = composeServices([serviceA, serviceB]);
+      expect(schema).toBeDefined();
+      expect(errors).toMatchInlineSnapshot(`Array []`);
+
+      const colorField = (schema.getType(
+        "ProductInput"
+      ) as GraphQLInputObjectType).getFields()["color"];
+
+      expect(colorField.serviceName).toEqual("serviceB");
+    });
+
+    it("extends enum types", () => {
+      const serviceA = {
+        typeDefs: gql`
+          enum ProductCategory {
+            BED
+            BATH
+          }
+        `,
+        name: "serviceA"
+      };
+
+      const serviceB = {
+        typeDefs: gql`
+          extend enum ProductCategory {
+            BEYOND
+          }
+        `,
+        name: "serviceB"
+      };
+
+      const { schema, errors } = composeServices([serviceA, serviceB]);
+      expect(schema).toBeDefined();
+      expect(errors).toMatchInlineSnapshot(`Array []`);
+
+      const category = schema.getType("ProductCategory") as GraphQLEnumType;
+      expect(category.serviceName).toEqual("serviceA");
+      expect(category.getValue("BEYOND").serviceName).toEqual("serviceB");
+    });
+  });
 
   // Jake's example: extending a type that implements an interface in an invalid way
   // enum collisions (try to get last wins behavior, otherwise note the limitation)

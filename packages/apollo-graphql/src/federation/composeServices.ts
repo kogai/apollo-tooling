@@ -1,6 +1,5 @@
 import "apollo-env";
 import {
-  GraphQLObjectType,
   GraphQLSchema,
   extendSchema,
   Kind,
@@ -10,12 +9,18 @@ import {
   isTypeDefinitionNode,
   isTypeExtensionNode,
   GraphQLError,
-  validateSchema
+  isEnumType,
+  GraphQLNamedType,
+  isObjectType,
+  isInputObjectType,
+  isInterfaceType,
+  isUnionType,
+  isScalarType
 } from "graphql";
 import { SDLValidationRule } from "graphql/validation/ValidationContext";
 import { validateSDL } from "graphql/validation/validate";
 
-import federationDirectives from "./federation/directives";
+import federationDirectives from "./directives";
 
 declare module "graphql/validation/validate" {
   function validateSDL(
@@ -30,7 +35,35 @@ declare module "graphql/type/definition" {
     serviceName?: string;
   }
 
+  interface GraphQLEnumType {
+    serviceName?: string;
+  }
+
+  interface GraphQLScalarType {
+    serviceName?: string;
+  }
+
+  interface GraphQLInterfaceType {
+    serviceName?: string;
+  }
+
+  interface GraphQLUnionType {
+    serviceName?: string;
+  }
+
+  interface GraphQLInputObjectType {
+    serviceName?: string;
+  }
+
+  interface GraphQLInputField {
+    serviceName?: string;
+  }
+
   interface GraphQLField<TSource, TContext> {
+    serviceName?: string;
+  }
+
+  interface GraphQLEnumValue {
     serviceName?: string;
   }
 }
@@ -137,11 +170,15 @@ export function composeServices(services: ServiceDefinition[]) {
          * This definition is an extension of an OBJECT type defined in another service.
          * TODO: handle extensions of non-object types?
          */
-        if (definition.kind === Kind.OBJECT_TYPE_EXTENSION) {
+        if (
+          definition.kind === Kind.OBJECT_TYPE_EXTENSION ||
+          definition.kind === Kind.INPUT_OBJECT_TYPE_EXTENSION
+        ) {
           if (!definition.fields) break;
 
+          // XXX fix types
           // create map of { fieldName: serviceName } for each field.
-          const fields = definition.fields.reduce((prev, next) => {
+          const fields = (definition.fields as any[]).reduce((prev, next) => {
             prev[next.name.value] = serviceName;
             return prev;
           }, Object.create(null));
@@ -158,6 +195,24 @@ export function composeServices(services: ServiceDefinition[]) {
             };
           } else {
             serviceMap[typeName] = { extensionFields: fields };
+          }
+        }
+
+        if (definition.kind === Kind.ENUM_TYPE_EXTENSION) {
+          if (!definition.values) break;
+
+          const values = definition.values.reduce((prev, next) => {
+            prev[next.name.value] = serviceName;
+            return prev;
+          }, Object.create(null));
+
+          if (serviceMap[typeName]) {
+            serviceMap[typeName].extensionFields = {
+              ...serviceMap[typeName].extensionFields,
+              ...values
+            };
+          } else {
+            serviceMap[typeName] = { extensionFields: values };
           }
         }
 
@@ -182,17 +237,22 @@ export function composeServices(services: ServiceDefinition[]) {
   });
 
   // Extend the blank schema with the base type definitions
-  schema = extendSchema(schema, {
+
+  const definitionsDocument = {
     kind: Kind.DOCUMENT,
     definitions: Object.values(definitionsMap).flat()
-  });
+  };
+
+  errors = validateSDL(definitionsDocument, schema);
+
+  schema = extendSchema(schema, definitionsDocument, { assumeValidSDL: true });
 
   const extensionsDocument = {
     kind: Kind.DOCUMENT,
     definitions: Object.values(extensionsMap).flat()
   };
 
-  errors = validateSDL(extensionsDocument, schema);
+  errors.push(...validateSDL(extensionsDocument, schema));
 
   schema = extendSchema(schema, extensionsDocument, { assumeValidSDL: true });
 
@@ -205,12 +265,38 @@ export function composeServices(services: ServiceDefinition[]) {
     typeName,
     { serviceName: baseServiceName, extensionFields }
   ] of Object.entries(serviceMap)) {
-    const objectType = schema.getType(typeName) as GraphQLObjectType;
-    objectType.serviceName = baseServiceName;
+    // A named type can be any one of:
+    // ObjectType, InputObjectType, EnumType, UnionType, InterfaceType, ScalarType
+    const namedType = schema.getType(typeName) as GraphQLNamedType;
+    namedType.serviceName = baseServiceName;
     for (const [fieldName, extendingServiceName] of Object.entries(
       extensionFields
     )) {
-      objectType.getFields()[fieldName].serviceName = extendingServiceName;
+      if (
+        isObjectType(namedType) ||
+        isInputObjectType(namedType) ||
+        isInterfaceType(namedType)
+      ) {
+        namedType.getFields()[fieldName].serviceName = extendingServiceName;
+      }
+
+      if (isEnumType(namedType)) {
+        const enumValue = namedType
+          .getValues()
+          .find(value => value.name === fieldName);
+
+        if (enumValue) {
+          enumValue.serviceName = extendingServiceName;
+        }
+      }
+
+      if (isUnionType(namedType)) {
+        // TODO
+      }
+
+      if (isScalarType(namedType)) {
+        // TODO
+      }
     }
   }
 
