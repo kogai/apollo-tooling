@@ -9,8 +9,21 @@ import {
   TypeExtensionNode,
   isTypeDefinitionNode,
   isTypeExtensionNode,
-  GraphQLError
+  GraphQLError,
+  validateSchema
 } from "graphql";
+import { SDLValidationRule } from "graphql/validation/ValidationContext";
+import { validateSDL } from "graphql/validation/validate";
+
+import federationDirectives from "./federation/directives";
+
+declare module "graphql/validation/validate" {
+  function validateSDL(
+    documentAST: DocumentNode,
+    schemaToExtend?: GraphQLSchema | null,
+    rules?: ReadonlyArray<SDLValidationRule>
+  ): GraphQLError[];
+}
 
 declare module "graphql/type/definition" {
   interface GraphQLObjectType {
@@ -28,7 +41,7 @@ interface ServiceDefinition {
 }
 
 export function composeServices(services: ServiceDefinition[]) {
-  let errors: GraphQLError[] = [];
+  let errors: GraphQLError[] | undefined = undefined;
   // Map of all definitions to eventually be passed to extendSchema
   const definitionsMap: {
     [name: string]: TypeDefinitionNode[];
@@ -165,7 +178,7 @@ export function composeServices(services: ServiceDefinition[]) {
   // After mapping over each service/type we can build the new schema from nothing.
   let schema = new GraphQLSchema({
     query: undefined,
-    directives: undefined
+    directives: federationDirectives
   });
 
   // Extend the blank schema with the base type definitions
@@ -174,23 +187,14 @@ export function composeServices(services: ServiceDefinition[]) {
     definitions: Object.values(definitionsMap).flat()
   });
 
-  // extend the base schema with service extensions
-  try {
-    schema = extendSchema(schema, {
-      kind: Kind.DOCUMENT,
-      definitions: Object.values(extensionsMap).flat()
-    });
-  } catch (e) {
-    errors.push(e);
-    schema = extendSchema(
-      schema,
-      {
-        kind: Kind.DOCUMENT,
-        definitions: Object.values(extensionsMap).flat()
-      },
-      { assumeValidSDL: true }
-    );
-  }
+  const extensionsDocument = {
+    kind: Kind.DOCUMENT,
+    definitions: Object.values(extensionsMap).flat()
+  };
+
+  errors = validateSDL(extensionsDocument, schema);
+
+  schema = extendSchema(schema, extensionsDocument, { assumeValidSDL: true });
 
   /**
    * Extend each type in the GraphQLSchema we built with its `baseServiceName` (the owner of the base type)

@@ -25,7 +25,7 @@ describe("composeServices", () => {
     };
 
     const { schema, errors } = composeServices([serviceA, serviceB]);
-    expect(errors).toBeUndefined();
+    expect(errors).toHaveLength(0);
     expect(schema).toBeDefined();
 
     expect(schema.getType("User")).toMatchInlineSnapshot(`
@@ -71,7 +71,7 @@ type Product {
       };
 
       const { schema, errors } = composeServices([serviceA, serviceB]);
-      expect(errors).toBeUndefined();
+      expect(errors).toHaveLength(0);
       expect(schema).toBeDefined();
 
       expect(schema.getType("Product")).toMatchInlineSnapshot(`
@@ -109,7 +109,7 @@ type Product {
       };
 
       const { schema, errors } = composeServices([serviceB, serviceA]);
-      expect(errors).toBeUndefined();
+      expect(errors).toHaveLength(0);
       expect(schema).toBeDefined();
 
       expect(schema.getType("Product")).toMatchInlineSnapshot(`
@@ -157,7 +157,7 @@ type Product {
     };
 
     const { schema, errors } = composeServices([serviceB, serviceA, serviceC]);
-    expect(errors).toBeUndefined();
+    expect(errors).toHaveLength(0);
     expect(schema).toBeDefined();
 
     expect(schema.getType("Product")).toMatchInlineSnapshot(`
@@ -202,7 +202,7 @@ type Product {
     expect(schema).toBeDefined();
     expect(errors).toMatchInlineSnapshot(`
 Array [
-  [Error: Field "Product.name" already exists in the schema. It cannot also be defined in this type extension.],
+  [GraphQLError: Field "Product.name" already exists in the schema. It cannot also be defined in this type extension.],
 ]
 `);
 
@@ -217,17 +217,153 @@ type Product {
     expect(product.getFields()["name"].serviceName).toEqual("serviceB");
   });
 
-  it("handles collisions of base types expected (newest takes precedence)", () => {});
+  // TODO: rename services instead of just reordering them in composeServices
+  // This is a limitation of extendSchema currently (this is currently a broken test to demonstrate)
+  it.skip("handles overwriting of extension field by base type when base type comes second", () => {
+    const serviceA = {
+      typeDefs: gql`
+        type Product {
+          sku: String!
+          name: String!
+        }
+      `,
+      name: "serviceA"
+    };
 
-  it("lists, non-null, interfaces, unions, input, enum types", () => {});
+    const serviceB = {
+      typeDefs: gql`
+        extend type Product {
+          sku: String!
+          name: String!
+        }
+      `,
+      name: "serviceB"
+    };
 
-  it("extending these -> lists, non-null, interfaces, unions, input, enums types", () => {});
+    const { schema, errors } = composeServices([serviceB, serviceA]);
+    expect(schema).toBeDefined();
+    expect(errors).toMatchInlineSnapshot(`
+Array [
+  [GraphQLError: Field "Product.sku" already exists in the schema. It cannot also be defined in this type extension.],
+  [GraphQLError: Field "Product.name" already exists in the schema. It cannot also be defined in this type extension.],
+]
+`);
 
-  it("using arguments (are they preserved, etc.)", () => {});
+    const product = schema.getType("Product") as GraphQLObjectType;
 
+    expect(product).toMatchInlineSnapshot(`
+type Product {
+  sku: String!
+  name: String!
+}
+`);
+    expect(product.getFields()["sku"].serviceName).toEqual("serviceA");
+    expect(product.getFields()["name"].serviceName).toEqual("serviceA");
+  });
+
+  // TODO
+  it.skip("handles overwriting of extension field by base type when two seperate extensions overwrite the same field", () => {});
+
+  it("report multiple errors correctly", () => {
+    const serviceA = {
+      typeDefs: gql`
+        type Product {
+          sku: String!
+          name: String!
+        }
+      `,
+      name: "serviceA"
+    };
+
+    const serviceB = {
+      typeDefs: gql`
+        extend type Product {
+          sku: String!
+          name: String!
+        }
+      `,
+      name: "serviceB"
+    };
+
+    const { schema, errors } = composeServices([serviceA, serviceB]);
+    expect(schema).toBeDefined();
+    expect(errors).toMatchInlineSnapshot(`
+Array [
+  [GraphQLError: Field "Product.sku" already exists in the schema. It cannot also be defined in this type extension.],
+  [GraphQLError: Field "Product.name" already exists in the schema. It cannot also be defined in this type extension.],
+]
+`);
+
+    const product = schema.getType("Product") as GraphQLObjectType;
+
+    expect(product).toMatchInlineSnapshot(`
+type Product {
+  sku: String!
+  name: String!
+}
+`);
+    expect(product.getFields()["name"].serviceName).toEqual("serviceB");
+  });
+
+  it("handles collisions of base types as expected (newest takes precedence)", () => {});
+
+  // Maybe just test conflicts in types
+  it("lists, null, interfaces, unions, input, enum types", () => {});
+
+  // Jake's example: extending a type that implements an interface in an invalid way
+  // enum collisions (try to get last wins behavior, otherwise note the limitation)
+  it("extending these -> input, enums types", () => {});
+
+  // it("custom scalars / extending them", () => {});
+
+  // it("using arguments (are they preserved, etc.)", () => {});
+
+  // treat `type` and `extend type` the same with root types
+  // how to handle renaming root types?
   it("merges two+ schemas that only _extend_ query. should we ever be able to not define query", () => {});
 
-  it("custom scalars / extending them", () => {});
+  // treat `extend type` as a base type when there is no base type
 
-  it("handles collisions on type extensions as expected", () => {});
+  // What's next?
+  // Directives - allow schema (federation) directives
+  it("allows federation directives", () => {
+    const serviceA = {
+      typeDefs: gql`
+        type Product @key(fields: "sku") {
+          sku: String!
+          name: String!
+        }
+      `,
+      name: "serviceA"
+    };
+
+    const serviceB = {
+      typeDefs: gql`
+        extend type Product {
+          sku: String! @external
+          price: Int! @requires(fields: "sku")
+        }
+      `,
+      name: "serviceB"
+    };
+
+    const { schema, errors } = composeServices([serviceA, serviceB]);
+    expect(schema).toBeDefined();
+    expect(errors).toMatchInlineSnapshot(`
+Array [
+  [GraphQLError: Field "Product.sku" already exists in the schema. It cannot also be defined in this type extension.],
+]
+`);
+
+    const product = schema.getType("Product") as GraphQLObjectType;
+
+    expect(product).toMatchInlineSnapshot(`
+type Product {
+  sku: String!
+  name: String!
+  price: Int!
+}
+`);
+    expect(product.getFields()["price"].serviceName).toEqual("serviceB");
+  });
 });
