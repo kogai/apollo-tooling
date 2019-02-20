@@ -178,7 +178,44 @@ type Product {
 
   // Brainstorm result, these test cases should be reworded and properly defined
 
-  it("handles collisions on type extensions as expected", () => {});
+  it("handles collisions on type extensions as expected", () => {
+    const serviceA = {
+      typeDefs: gql`
+        type Product {
+          sku: String!
+          name: String!
+        }
+      `,
+      name: "serviceA"
+    };
+
+    const serviceB = {
+      typeDefs: gql`
+        extend type Product {
+          name: String!
+        }
+      `,
+      name: "serviceB"
+    };
+
+    const { schema, errors } = composeServices([serviceA, serviceB]);
+    expect(schema).toBeDefined();
+    expect(errors).toMatchInlineSnapshot(`
+Array [
+  [Error: Field "Product.name" already exists in the schema. It cannot also be defined in this type extension.],
+]
+`);
+
+    const product = schema.getType("Product") as GraphQLObjectType;
+
+    expect(product).toMatchInlineSnapshot(`
+type Product {
+  sku: String!
+  name: String!
+}
+`);
+    expect(product.getFields()["name"].serviceName).toEqual("serviceB");
+  });
 
   it("handles collisions of base types expected (newest takes precedence)", () => {});
 

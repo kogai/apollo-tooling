@@ -8,7 +8,8 @@ import {
   TypeDefinitionNode,
   TypeExtensionNode,
   isTypeDefinitionNode,
-  isTypeExtensionNode
+  isTypeExtensionNode,
+  GraphQLError
 } from "graphql";
 
 declare module "graphql/type/definition" {
@@ -27,6 +28,7 @@ interface ServiceDefinition {
 }
 
 export function composeServices(services: ServiceDefinition[]) {
+  let errors: GraphQLError[] = [];
   // Map of all definitions to eventually be passed to extendSchema
   const definitionsMap: {
     [name: string]: TypeDefinitionNode[];
@@ -173,10 +175,22 @@ export function composeServices(services: ServiceDefinition[]) {
   });
 
   // extend the base schema with service extensions
-  schema = extendSchema(schema, {
-    kind: Kind.DOCUMENT,
-    definitions: Object.values(extensionsMap).flat()
-  });
+  try {
+    schema = extendSchema(schema, {
+      kind: Kind.DOCUMENT,
+      definitions: Object.values(extensionsMap).flat()
+    });
+  } catch (e) {
+    errors.push(e);
+    schema = extendSchema(
+      schema,
+      {
+        kind: Kind.DOCUMENT,
+        definitions: Object.values(extensionsMap).flat()
+      },
+      { assumeValidSDL: true }
+    );
+  }
 
   /**
    * Extend each type in the GraphQLSchema we built with its `baseServiceName` (the owner of the base type)
@@ -201,5 +215,5 @@ export function composeServices(services: ServiceDefinition[]) {
    * and every field that was extended. Fields that were _not_ extended (added on the base type by the owner),
    * there is no `serviceName`, and we should refer to the type's `serviceName`
    */
-  return { schema, errors: undefined };
+  return { schema, errors };
 }
