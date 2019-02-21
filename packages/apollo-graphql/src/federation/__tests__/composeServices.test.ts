@@ -182,11 +182,136 @@ type Product {
       expect(product.getFields()["color"].serviceName).toEqual("serviceC");
     });
 
-    it.skip("handles overwriting of extension field by base type when two extensions overwrite the same field", () => {});
+    it("allows extensions to overwrite other extension fields", () => {
+      const serviceA = {
+        typeDefs: gql`
+          extend type Product {
+            price: Int!
+          }
+        `,
+        name: "serviceA"
+      };
 
-    it.skip("preserves arguments for fields", () => {});
+      const serviceB = {
+        typeDefs: gql`
+          type Product {
+            sku: String!
+            name: String!
+          }
+        `,
+        name: "serviceB"
+      };
 
-    it.skip("treats type extensions as a base type definition when none is available", () => {});
+      const serviceC = {
+        typeDefs: gql`
+          extend type Product {
+            price: Float!
+            color: String!
+          }
+        `,
+        name: "serviceC"
+      };
+
+      const { schema, errors } = composeServices([
+        serviceA,
+        serviceB,
+        serviceC
+      ]);
+      expect(errors).toMatchInlineSnapshot(`
+Array [
+  [GraphQLError: Field "Product.price" can only be defined once.],
+]
+`);
+      expect(schema).toBeDefined();
+
+      const product = schema.getType("Product") as GraphQLObjectType;
+      expect(product).toMatchInlineSnapshot(`
+type Product {
+  sku: String!
+  name: String!
+  price: Float!
+  color: String!
+}
+`);
+
+      expect(product.serviceName).toEqual("serviceB");
+      expect(product.getFields()["price"].serviceName).toEqual("serviceC");
+    });
+
+    it("preserves arguments for fields", () => {
+      const serviceA = {
+        typeDefs: gql`
+          enum Curr {
+            USD
+            GBP
+          }
+
+          extend type Product {
+            price(currency: Curr!): Int!
+          }
+        `,
+        name: "serviceA"
+      };
+
+      const serviceB = {
+        typeDefs: gql`
+          type Product {
+            sku: String!
+            name(type: String): String!
+          }
+        `,
+        name: "serviceB"
+      };
+      const { schema, errors } = composeServices([serviceA, serviceB]);
+      expect(errors).toHaveLength(0);
+      expect(schema).toBeDefined();
+
+      expect(schema.getType("Product")).toMatchInlineSnapshot(`
+type Product {
+  sku: String!
+  name(type: String): String!
+  price(currency: Curr!): Int!
+}
+`);
+
+      const product = schema.getType("Product") as GraphQLObjectType;
+      expect(product.getFields()["price"].args[0].name).toEqual("currency");
+    });
+
+    it("treats type extensions as a base type definition when none is available", () => {
+      const serviceA = {
+        typeDefs: gql`
+          extend type Product {
+            price: Float!
+          }
+        `,
+        name: "serviceA"
+      };
+
+      const serviceB = {
+        typeDefs: gql`
+          extend type Product {
+            color: String!
+          }
+        `,
+        name: "serviceB"
+      };
+
+      const { schema, errors } = composeServices([serviceA, serviceB]);
+      expect(errors).toHaveLength(0);
+      expect(schema).toBeDefined();
+
+      expect(schema.getType("Product")).toMatchInlineSnapshot(`
+type Product {
+  price: Float!
+  color: String!
+}
+`);
+
+      const product = schema.getType("Product") as GraphQLObjectType;
+
+      expect(product.serviceName).toEqual(null);
+    });
 
     // This is a limitation of extendSchema currently (this is currently a broken test to demonstrate)
     it.skip("overwrites field on extension by base type when base type comes second", () => {
@@ -419,23 +544,181 @@ type Product {
       expect(category.getValue("BEYOND").serviceName).toEqual("serviceB");
     });
 
-    it.skip("uses most recent type declaration for enums", () => {});
+    it("uses most recent type declaration for enums", () => {
+      const serviceA = {
+        typeDefs: gql`
+          enum ProductCategory {
+            BED
+            BATH
+          }
+        `,
+        name: "serviceA"
+      };
+
+      const serviceB = {
+        typeDefs: gql`
+          enum ProductCategory {
+            BEYOND
+          }
+        `,
+        name: "serviceB"
+      };
+
+      const { schema, errors } = composeServices([serviceA, serviceB]);
+      expect(schema).toBeDefined();
+      expect(errors).toMatchInlineSnapshot(`
+Array [
+  [GraphQLError: There can be only one type named "ProductCategory".],
+]
+`);
+
+      const category = schema.getType("ProductCategory") as GraphQLEnumType;
+      expect(category).toMatchInlineSnapshot(`
+enum ProductCategory {
+  BEYOND
+}
+`);
+
+      expect(category.serviceName).toEqual("serviceB");
+    });
   });
 
   describe("interfaces", () => {
-    it.skip("warns when overwriting a type that implements an interface improperly", () => {});
+    // TODO: should there be a validation warning of some sort for this?
+    it("allows overwriting a type that implements an interface improperly", () => {
+      const serviceA = {
+        typeDefs: gql`
+          interface Item {
+            id: ID!
+          }
+
+          type Product implements Item {
+            id: ID!
+            sku: String!
+            name: String!
+          }
+        `,
+        name: "serviceA"
+      };
+
+      const serviceB = {
+        typeDefs: gql`
+          extend type Product {
+            id: String!
+          }
+        `,
+        name: "serviceB"
+      };
+
+      const { schema, errors } = composeServices([serviceA, serviceB]);
+      expect(errors).toMatchInlineSnapshot(`
+Array [
+  [GraphQLError: Field "Product.id" already exists in the schema. It cannot also be defined in this type extension.],
+]
+`);
+
+      expect(schema).toBeDefined();
+
+      expect(schema.getType("Product")).toMatchInlineSnapshot(`
+type Product implements Item {
+  id: String!
+  sku: String!
+  name: String!
+}
+`);
+
+      const product = schema.getType("Product") as GraphQLObjectType;
+
+      expect(product.serviceName).toEqual("serviceA");
+      expect(product.getFields()["id"].serviceName).toEqual("serviceB");
+    });
   });
 
   describe("root type extensions", () => {
-    it.skip("allows extension of the Query type with no base type definition", () => {});
-    it.skip("treats root type definitions as extensions, not base definitions", () => {});
+    // TODO
+    it("allows extension of the Query type with no base type definition", () => {
+      const serviceA = {
+        typeDefs: gql`
+          extend type Query {
+            products: [ID!]
+          }
+        `,
+        name: "serviceA"
+      };
+
+      const serviceB = {
+        typeDefs: gql`
+          extend type Query {
+            people: [ID!]
+          }
+        `,
+        name: "serviceB"
+      };
+
+      const { schema, errors } = composeServices([serviceA, serviceB]);
+      expect(errors).toHaveLength(0);
+      expect(schema).toBeDefined();
+
+      expect(schema.getType("Query")).toMatchInlineSnapshot(`
+type Query {
+  products: [ID!]
+  people: [ID!]
+}
+`);
+
+      const query = schema.getType("Query") as GraphQLObjectType;
+
+      expect(query.serviceName).toEqual(null);
+    });
+
+    xit("", () => {
+      // same as above, but use schema.getQueryType()
+    });
+
+    // TODO
+    xit("treats root type definitions as extensions, not base definitions", () => {
+      const serviceA = {
+        typeDefs: gql`
+          type Query {
+            products: [ID!]
+          }
+        `,
+        name: "serviceA"
+      };
+
+      const serviceB = {
+        typeDefs: gql`
+          extend type Query {
+            people: [ID!]
+          }
+        `,
+        name: "serviceB"
+      };
+
+      const { schema, errors } = composeServices([serviceA, serviceB]);
+      expect(errors).toHaveLength(0);
+      expect(schema).toBeDefined();
+
+      expect(schema.getType("Query")).toMatchInlineSnapshot(`
+type Query {
+  products: [ID!]
+  people: [ID!]
+}
+`);
+
+      const query = schema.getType("Query") as GraphQLObjectType;
+
+      expect(query.serviceName).toBeUndefined();
+    });
+
+    // TODO: not sure what to do here. Haven't looked into it yet :)
     it.skip("works with custom root types", () => {});
   });
 
   describe("federation directives", () => {
     // What's next?
     // Directives - allow schema (federation) directives
-    it.skip("allows federation directives", () => {
+    it("does not redefine fields with @external when composing", () => {
       const serviceA = {
         typeDefs: gql`
           type Product @key(fields: "sku") {
@@ -458,7 +741,7 @@ type Product {
 
       const { schema, errors } = composeServices([serviceA, serviceB]);
       expect(schema).toBeDefined();
-      expect(errors).toMatchInlineSnapshot(`Array []`);
+      expect(errors).toHaveLength(0);
 
       const product = schema.getType("Product") as GraphQLObjectType;
 
@@ -470,10 +753,64 @@ type Product {
 }
 `);
       expect(product.getFields()["price"].serviceName).toEqual("serviceB");
-      expect(product.getFields()["sku"].serviceName).toEqual("serviceA");
+      expect(product.serviceName).toEqual("serviceA");
+    });
+
+    it("add @requires information to fields with the requires directive", () => {
+      const serviceA = {
+        typeDefs: gql`
+          type Product @key(fields: "sku") {
+            sku: String!
+          }
+        `,
+        name: "serviceA"
+      };
+
+      const serviceB = {
+        typeDefs: gql`
+          extend type Product {
+            sku: String! @external
+            price: Int! @requires(fields: "sku")
+          }
+        `,
+        name: "serviceB"
+      };
+
+      const { schema, errors } = composeServices([serviceA, serviceB]);
+      const product = schema.getType("Product") as GraphQLObjectType;
+      expect(product.getFields()["price"].requires).toEqual("sku");
+    });
+
+    it("add @key information to types", () => {
+      const serviceA = {
+        typeDefs: gql`
+          type Product @key(fields: "sku") @key(fields: "upc") {
+            sku: String!
+            upc: String!
+          }
+        `,
+        name: "serviceA"
+      };
+
+      const serviceB = {
+        typeDefs: gql`
+          extend type Product {
+            sku: String! @external
+            price: Int! @requires(fields: "sku")
+          }
+        `,
+        name: "serviceB"
+      };
+
+      const { schema, errors } = composeServices([serviceA, serviceB]);
+      const product = schema.getType("Product") as GraphQLObjectType;
+      expect(product.keys).toEqual(["sku", "upc"]);
     });
   });
 });
 
 // XXX Ignored/unimplemented spec tests
 // it("allows extension of custom scalars", () => {});
+
+// Every service that includes an enum type in its schema needs to be compatible with definitions of the same type in other services.
+// For now, if two of the same enums exist, the last one wins

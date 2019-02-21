@@ -137,6 +137,20 @@ export function composeServices(services: ServiceDefinition[]) {
 
   for (const { typeDefs, name: serviceName } of services) {
     for (const definition of typeDefs.definitions) {
+      if (
+        (definition.kind === Kind.OBJECT_TYPE_DEFINITION ||
+          definition.kind === Kind.OBJECT_TYPE_EXTENSION) &&
+        definition.fields
+      ) {
+        definition.fields = definition.fields.filter(field => {
+          return !(
+            field.directives &&
+            field.directives.some(
+              directive => directive.name.value === "external"
+            )
+          );
+        });
+      }
       if (isTypeDefinitionNode(definition)) {
         const typeName = definition.name.value;
 
@@ -230,6 +244,28 @@ export function composeServices(services: ServiceDefinition[]) {
     }
   }
 
+  /**
+   * what if an extended type doesn't have a base type?
+   * - Check each of the extensions, and see if there's a corresponding definition
+   * - if so, do nothing. If not, create an empty definition with `null` as the serviceName
+   */
+  for (const [name, extensionNode] of Object.entries(extensionsMap)) {
+    if (!definitionsMap[name]) {
+      definitionsMap[name] = [
+        {
+          kind: Kind.OBJECT_TYPE_DEFINITION,
+          name: { kind: Kind.NAME, value: name },
+          fields: []
+        }
+      ];
+
+      // XXX types might be off if no TS error is happening here
+      // ideally, the serviceName would be the first extending service, but there's not a reliable way
+      // to trace the extensionNode back to a service.
+      serviceMap[name].serviceName = null;
+    }
+  }
+
   // After mapping over each service/type we can build the new schema from nothing.
   let schema = new GraphQLSchema({
     query: undefined,
@@ -242,6 +278,7 @@ export function composeServices(services: ServiceDefinition[]) {
     kind: Kind.DOCUMENT,
     definitions: Object.values(definitionsMap).flat()
   };
+  // throw new Error(JSON.stringify(definitionsDocument));
 
   errors = validateSDL(definitionsDocument, schema);
 
@@ -269,6 +306,25 @@ export function composeServices(services: ServiceDefinition[]) {
     // ObjectType, InputObjectType, EnumType, UnionType, InterfaceType, ScalarType
     const namedType = schema.getType(typeName) as GraphQLNamedType;
     namedType.serviceName = baseServiceName;
+
+    if (isObjectType(namedType)) {
+      const keyDirectives =
+        namedType.astNode &&
+        namedType.astNode.directives &&
+        namedType.astNode.directives.filter(
+          directive => directive.name.value === "key"
+        );
+      namedType.keys = keyDirectives
+        ? keyDirectives
+            .map(keyDirective =>
+              keyDirective.arguments
+                ? keyDirective.arguments[0].value.value
+                : null
+            )
+            .filter(Boolean)
+        : [];
+    }
+
     for (const [fieldName, extendingServiceName] of Object.entries(
       extensionFields
     )) {
@@ -277,9 +333,21 @@ export function composeServices(services: ServiceDefinition[]) {
         isInputObjectType(namedType) ||
         isInterfaceType(namedType)
       ) {
-        namedType.getFields()[fieldName].serviceName = extendingServiceName;
+        const field = namedType.getFields()[fieldName];
+        field.serviceName = extendingServiceName;
+
+        const requiresDirective =
+          field.astNode &&
+          field.astNode.directives.find(
+            directive => directive.name.value === "requires"
+          );
+
+        if (requiresDirective && requiresDirective.arguments) {
+          field.requires = requiresDirective.arguments[0].value.value;
+        }
       }
 
+      // TODO: We want to throw warnings for this
       if (isEnumType(namedType)) {
         const enumValue = namedType
           .getValues()
@@ -292,6 +360,7 @@ export function composeServices(services: ServiceDefinition[]) {
 
       if (isUnionType(namedType)) {
         // TODO
+        // can you extend a union type?
       }
 
       if (isScalarType(namedType)) {
