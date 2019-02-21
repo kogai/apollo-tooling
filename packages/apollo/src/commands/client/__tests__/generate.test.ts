@@ -136,27 +136,27 @@ describe("client:codegen", () => {
     });
 
   // FIXME: doesn't write anything significant to snapshot
-  test
-    .skip()
-    .fs({
-      "schema.json": fullSchemaJsonString,
-      "queryOne.graphql": simpleQuery.toString(),
-      "queryTwo.graphql": otherQuery.toString(),
-      "my.config.js": defaultConfig
-    })
-    .command([
-      "client:codegen",
-      "--config=my.config.js",
-      "--only=queryTwo.graphql",
-      "--target=swift",
-      "outDirectory"
-    ])
-    .it("handles only flag for Swift target", () => {
-      const [filePath] = fs.readdirSync("./outDirectory");
-      const file = fs.readFileSync(`./outDirectory/${filePath}`).toString();
+  // test
+  //   .skip()
+  //   .fs({
+  //     "schema.json": fullSchemaJsonString,
+  //     "queryOne.graphql": simpleQuery.toString(),
+  //     "queryTwo.graphql": otherQuery.toString(),
+  //     "my.config.js": defaultConfig
+  //   })
+  //   .command([
+  //     "client:codegen",
+  //     "--config=my.config.js",
+  //     "--only=queryTwo.graphql",
+  //     "--target=swift",
+  //     "outDirectory"
+  //   ])
+  //   .it("handles only flag for Swift target", () => {
+  //     const [filePath] = fs.readdirSync("./outDirectory");
+  //     const file = fs.readFileSync(`./outDirectory/${filePath}`).toString();
 
-      // expect(file).toMatchSnapshot();
-    });
+  //     // expect(file).toMatchSnapshot();
+  //   });
 
   test
     .fs({
@@ -377,251 +377,253 @@ describe("client:codegen", () => {
     });
 
   // TODO: fix UnhandledPromiseRejection
-  test
-    .skip()
-    .fs({
-      "schema.json": fullSchemaJsonString,
-      "components/component.tsx": `
-        const query = gql\`
-          query SimpleQuery {
-            hello
-          }
-        \`;
-      `,
-      "my.config.js": `
-        module.exports = {
-          client: {
-            includes: ["./**.graphql", "./**/*.tsx"],
-            service: { name: "my-service-name", localSchemaFile: "./schema.json" }
-          }
-        }
-      `
-    })
-    .command(["client:codegen", "--target=typescript", "--config=my.config.js"])
-    .it(
-      "writes TypeScript types into a __generated__ directory next to sources when no output is set",
-      () => {
-        expect(
-          fs
-            .readFileSync("./components/__generated__/SimpleQuery.ts")
-            .toString()
-        ).toMatchSnapshot();
-        expect(
-          fs.readFileSync("./__generated__/globalTypes.ts").toString()
-        ).toMatchSnapshot();
-      }
-    );
+  // test
+  //   .skip()
+  //   .fs({
+  //     "schema.json": fullSchemaJsonString,
+  //     "components/component.tsx": `
+  //       const query = gql\`
+  //         query SimpleQuery {
+  //           hello
+  //         }
+  //       \`;
+  //     `,
+  //     "my.config.js": `
+  //       module.exports = {
+  //         client: {
+  //           includes: ["./**.graphql", "./**/*.tsx"],
+  //           service: { name: "my-service-name", localSchemaFile: "./schema.json" }
+  //         }
+  //       }
+  //     `
+  //   })
+  //   .command(["client:codegen", "--target=typescript", "--config=my.config.js"])
+  //   .it(
+  //     "writes TypeScript types into a __generated__ directory next to sources when no output is set",
+  //     () => {
+  //       expect(
+  //         fs
+  //           .readFileSync("./components/__generated__/SimpleQuery.ts")
+  //           .toString()
+  //       ).toMatchSnapshot();
+  //       expect(
+  //         fs.readFileSync("./__generated__/globalTypes.ts").toString()
+  //       ).toMatchSnapshot();
+  //     }
+  //   );
 
   // TODO: fix
-  test
-    .skip()
-    .fs({
-      "schema.json": fullSchemaJsonString,
-      "components/component.jsx": `
-        const query = gql\`
-          query SimpleQuery {
-            hello
-          }
-        \`;
-      `,
-      "my.config.js": `
-        module.exports = {
-          client: {
-            includes: ["./**.graphql", "./**/*.jsx"],
-            service: { name: "my-service-name", localSchemaFile: "./schema.json" }
-          }
-        }
-      `
-    })
-    .command(["client:codegen", "--target=flow", "--config=my.config.js"])
-    .it(
-      "writes flow types into a __generated__ directory next to sources when no output is set",
-      () => {
-        expect(
-          fs
-            .readFileSync("./components/__generated__/SimpleQuery.js")
-            .toString()
-        ).toMatchSnapshot();
-      }
-    );
+  // test
+  //   .skip()
+  //   .fs({
+  //     "schema.json": fullSchemaJsonString,
+  //     "components/component.jsx": `
+  //       const query = gql\`
+  //         query SimpleQuery {
+  //           hello
+  //         }
+  //       \`;
+  //     `,
+  //     "my.config.js": `
+  //       module.exports = {
+  //         client: {
+  //           includes: ["./**.graphql", "./**/*.jsx"],
+  //           service: { name: "my-service-name", localSchemaFile: "./schema.json" }
+  //         }
+  //       }
+  //     `
+  //   })
+  //   .command(["client:codegen", "--target=flow", "--config=my.config.js"])
+  //   .it(
+  //     "writes flow types into a __generated__ directory next to sources when no output is set",
+  //     () => {
+  //       expect(
+  //         fs
+  //           .readFileSync("./components/__generated__/SimpleQuery.js")
+  //           .toString()
+  //       ).toMatchSnapshot();
+  //     }
+  //   );
 
   // TODO: fix
-  test
-    .skip()
-    .fs({
-      "schema.json": fullSchemaJsonString,
-      "components/component.tsx": `
-        const query = gql\`
-          query SimpleQuery {
-            hello
-          }
-        \`;
-      `,
-      "my.config.js": `
-        module.exports = {
-          client: {
-            includes: ["./**.graphql", "./**/*.tsx"],
-            service: { name: "my-service-name", localSchemaFile: "./schema.json" }
-          }
-        }
-      `
-    })
-    .command([
-      "client:codegen",
-      "--config=my.config.js",
-      "--target=typescript",
-      "__foo__"
-    ])
-    .it(
-      "writes TypeScript types to a custom directory next to sources when output is set",
-      () => {
-        expect(
-          fs.readFileSync("components/__foo__/SimpleQuery.ts").toString()
-        ).toEqual();
-        expect(fs.readFileSync("__foo__/globalTypes.ts").toString()).toEqual();
-      }
-    );
+  // test
+  //   .skip()
+  //   .fs({
+  //     "schema.json": fullSchemaJsonString,
+  //     "components/component.tsx": `
+  //       const query = gql\`
+  //         query SimpleQuery {
+  //           hello
+  //         }
+  //       \`;
+  //     `,
+  //     "my.config.js": `
+  //       module.exports = {
+  //         client: {
+  //           includes: ["./**.graphql", "./**/*.tsx"],
+  //           service: { name: "my-service-name", localSchemaFile: "./schema.json" }
+  //         }
+  //       }
+  //     `
+  //   })
+  //   .command([
+  //     "client:codegen",
+  //     "--config=my.config.js",
+  //     "--target=typescript",
+  //     "__foo__"
+  //   ])
+  //   .it(
+  //     "writes TypeScript types to a custom directory next to sources when output is set",
+  //     () => {
+  //       expect(
+  //         fs.readFileSync("components/__foo__/SimpleQuery.ts").toString()
+  //       ).toEqual("");
+  //       expect(fs.readFileSync("__foo__/globalTypes.ts").toString()).toEqual(
+  //         ""
+  //       );
+  //     }
+  //   );
 
   // TODO: fix unhandled rejection
-  test
-    .skip()
-    .fs({
-      "schema.json": fullSchemaJsonString,
-      "components/component.tsx": `
-        const query = gql\`
-          query SimpleQuery {
-            someEnum
-          }
-        \`;
-      `,
-      "my.config.js": `
-        module.exports = {
-          client: {
-            includes: ["./**.graphql", "./**/*.tsx"],
-            service: { name: "my-service-name", localSchemaFile: "./schema.json" }
-          }
-        }
-      `
-    })
-    .command([
-      "client:codegen",
-      "--config=my.config.js",
-      "--target=typescript",
-      "--globalTypesFile=__foo__/bar.ts"
-    ])
-    .it(
-      "writes TypeScript global types to a custom path when globalTypesFile is set",
-      () => {
-        expect(
-          fs.readFileSync("components/__generated__/SimpleQuery.ts").toString()
-        ).toMatchSnapshot();
-        expect(fs.readFileSync("__foo__/bar.ts").toString()).toMatchSnapshot();
-      }
-    );
+  // test
+  //   .skip()
+  //   .fs({
+  //     "schema.json": fullSchemaJsonString,
+  //     "components/component.tsx": `
+  //       const query = gql\`
+  //         query SimpleQuery {
+  //           someEnum
+  //         }
+  //       \`;
+  //     `,
+  //     "my.config.js": `
+  //       module.exports = {
+  //         client: {
+  //           includes: ["./**.graphql", "./**/*.tsx"],
+  //           service: { name: "my-service-name", localSchemaFile: "./schema.json" }
+  //         }
+  //       }
+  //     `
+  //   })
+  //   .command([
+  //     "client:codegen",
+  //     "--config=my.config.js",
+  //     "--target=typescript",
+  //     "--globalTypesFile=__foo__/bar.ts"
+  //   ])
+  //   .it(
+  //     "writes TypeScript global types to a custom path when globalTypesFile is set",
+  //     () => {
+  //       expect(
+  //         fs.readFileSync("components/__generated__/SimpleQuery.ts").toString()
+  //       ).toMatchSnapshot();
+  //       expect(fs.readFileSync("__foo__/bar.ts").toString()).toMatchSnapshot();
+  //     }
+  //   );
 
   // fix
-  test
-    .skip()
-    .fs({
-      "schema.json": fullSchemaJsonString,
-      "components/component.jsx": `
-        const query = gql\`
-          query SimpleQuery {
-            hello
-          }
-        \`;
-      `,
-      "my.config.js": `
-        module.exports = {
-          client: {
-            includes: ["./**.graphql", "./**/*.jsx"],
-            service: { name: "my-service-name", localSchemaFile: "./schema.json" }
-          }
-        }
-    `
-    })
-    .command([
-      "client:codegen",
-      "--config=my.config.js",
-      "--target=flow",
-      "__foo__"
-    ])
-    .it(
-      "writes Flow types to a custom directory next to sources when output is set",
-      () => {
-        expect(
-          fs.readFileSync("components/__foo__/SimpleQuery.js").toString()
-        ).toMatchSnapshot();
-      }
-    );
+  // test
+  //   .skip()
+  //   .fs({
+  //     "schema.json": fullSchemaJsonString,
+  //     "components/component.jsx": `
+  //       const query = gql\`
+  //         query SimpleQuery {
+  //           hello
+  //         }
+  //       \`;
+  //     `,
+  //     "my.config.js": `
+  //       module.exports = {
+  //         client: {
+  //           includes: ["./**.graphql", "./**/*.jsx"],
+  //           service: { name: "my-service-name", localSchemaFile: "./schema.json" }
+  //         }
+  //       }
+  //   `
+  //   })
+  //   .command([
+  //     "client:codegen",
+  //     "--config=my.config.js",
+  //     "--target=flow",
+  //     "__foo__"
+  //   ])
+  //   .it(
+  //     "writes Flow types to a custom directory next to sources when output is set",
+  //     () => {
+  //       expect(
+  //         fs.readFileSync("components/__foo__/SimpleQuery.js").toString()
+  //       ).toMatchSnapshot();
+  //     }
+  //   );
 
   // fix
-  test
-    .skip()
-    .fs({
-      "schema.json": fullSchemaJsonString,
-      "components/component.tsx": `
-        const query = gql\`
-          query SimpleQuery {
-            hello
-          }
-        \`;
-      `,
-      "my.config.js": `
-        module.exports = {
-          client: {
-            includes: ["./**.graphql", "./**/*.tsx"],
-            service: { name: "my-service-name", localSchemaFile: "./schema.json" }
-          }
-        }
-      `
-    })
-    .command([
-      "client:codegen",
-      "--config=my.config.js",
-      "--target=typescript",
-      ""
-    ])
-    .it(
-      "writes TypeScript types next to sources when output is set to empty string",
-      () => {
-        expect(
-          fs.readFileSync("components/SimpleQuery.ts").toString()
-        ).toMatchSnapshot();
-        expect(fs.readFileSync("globalTypes.ts").toString()).toMatchSnapshot();
-      }
-    );
+  // test
+  //   .skip()
+  //   .fs({
+  //     "schema.json": fullSchemaJsonString,
+  //     "components/component.tsx": `
+  //       const query = gql\`
+  //         query SimpleQuery {
+  //           hello
+  //         }
+  //       \`;
+  //     `,
+  //     "my.config.js": `
+  //       module.exports = {
+  //         client: {
+  //           includes: ["./**.graphql", "./**/*.tsx"],
+  //           service: { name: "my-service-name", localSchemaFile: "./schema.json" }
+  //         }
+  //       }
+  //     `
+  //   })
+  //   .command([
+  //     "client:codegen",
+  //     "--config=my.config.js",
+  //     "--target=typescript",
+  //     ""
+  //   ])
+  //   .it(
+  //     "writes TypeScript types next to sources when output is set to empty string",
+  //     () => {
+  //       expect(
+  //         fs.readFileSync("components/SimpleQuery.ts").toString()
+  //       ).toMatchSnapshot();
+  //       expect(fs.readFileSync("globalTypes.ts").toString()).toMatchSnapshot();
+  //     }
+  //   );
 
   // fix
-  test
-    .skip()
-    .fs({
-      "schema.json": fullSchemaJsonString,
-      "components/component.jsx": `
-        const query = gql\`
-          query SimpleQuery {
-            hello
-          }
-        \`;
-      `,
-      "my.config.js": `
-        module.exports = {
-          client: {
-            includes: ["./**.graphql", "./**/*.jsx"],
-            service: { name: "my-service-name", localSchemaFile: "./schema.json" }
-          }
-        }
-      `
-    })
-    .command(["client:codegen", "--config=my.config.js", "--target=flow", ""])
-    .it(
-      "writes flow types next to sources when output is set to empty string",
-      () => {
-        expect(
-          fs.readFileSync("components/SimpleQuery.js").toString()
-        ).toMatchSnapshot();
-      }
-    );
+  // test
+  //   .skip()
+  //   .fs({
+  //     "schema.json": fullSchemaJsonString,
+  //     "components/component.jsx": `
+  //       const query = gql\`
+  //         query SimpleQuery {
+  //           hello
+  //         }
+  //       \`;
+  //     `,
+  //     "my.config.js": `
+  //       module.exports = {
+  //         client: {
+  //           includes: ["./**.graphql", "./**/*.jsx"],
+  //           service: { name: "my-service-name", localSchemaFile: "./schema.json" }
+  //         }
+  //       }
+  //     `
+  //   })
+  //   .command(["client:codegen", "--config=my.config.js", "--target=flow", ""])
+  //   .it(
+  //     "writes flow types next to sources when output is set to empty string",
+  //     () => {
+  //       expect(
+  //         fs.readFileSync("components/SimpleQuery.js").toString()
+  //       ).toMatchSnapshot();
+  //     }
+  //   );
 
   test
     .fs({
