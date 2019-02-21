@@ -76,6 +76,7 @@ jest.setTimeout(25000);
 describe("client:codegen", () => {
   test
     .fs(defaultFiles)
+    .env({ DEBUG: "*" })
     .command([
       "client:codegen",
       "API.swift",
@@ -99,6 +100,7 @@ describe("client:codegen", () => {
         }
       `
     })
+    .env({ DEBUG: "*" })
     .command([
       "client:codegen",
       "API.swift",
@@ -122,6 +124,7 @@ describe("client:codegen", () => {
         }
       `
     })
+    .env({ DEBUG: "*" })
     .command([
       "client:codegen",
       "API.swift",
@@ -144,7 +147,7 @@ describe("client:codegen", () => {
   //     "queryTwo.graphql": otherQuery.toString(),
   //     "my.config.js": defaultConfig
   //   })
-  //   .command([
+  //   .env({DEBUG: '*'}).command([
   //     "client:codegen",
   //     "--config=my.config.js",
   //     "--only=queryTwo.graphql",
@@ -164,6 +167,7 @@ describe("client:codegen", () => {
       "queryOne.graphql": simpleQuery.toString(),
       "my.config.js": defaultConfig
     })
+    .env({ DEBUG: "*" })
     .command([
       "client:codegen",
       "--target=scala",
@@ -180,6 +184,7 @@ describe("client:codegen", () => {
       "queryOne.graphql": simpleQuery.toString(),
       "my.config.js": defaultConfig
     })
+    .env({ DEBUG: "*" })
     .command([
       "client:codegen",
       "--config=my.config.js",
@@ -198,6 +203,7 @@ describe("client:codegen", () => {
       "clientSideSchemaQuery.graphql": clientSideSchemaQuery.toString(),
       "my.config.js": defaultConfig
     })
+    .env({ DEBUG: "*" })
     .command([
       "client:codegen",
       "--config=my.config.js",
@@ -226,6 +232,7 @@ describe("client:codegen", () => {
         }
     `
     })
+    .env({ DEBUG: "*" })
     .command([
       "client:codegen",
       "--config=my.config.js",
@@ -265,7 +272,7 @@ describe("client:codegen", () => {
   //         `
   //       });
   //     })
-  //     .command(["codegen:generate", "--outputFlat", "API.ts"])
+  //     .env({DEBUG: '*'}).command(["codegen:generate", "--outputFlat", "API.ts"])
   //     .it(
   //       "infers TypeScript target and writes types for query with client-side data with schema in a JS file from config",
   //       () => {
@@ -288,6 +295,7 @@ describe("client:codegen", () => {
         }
     `
     })
+    .env({ DEBUG: "*" })
     .command([
       "client:codegen",
       "--config=my.config.js",
@@ -305,6 +313,7 @@ describe("client:codegen", () => {
       "queryOne.graphql": simpleQuery.toString(),
       "my.config.js": defaultConfig
     })
+    .env({ DEBUG: "*" })
     .command([
       "client:codegen",
       "--config=my.config.js",
@@ -322,6 +331,7 @@ describe("client:codegen", () => {
       "queryOne.graphql": simpleQuery.toString(),
       "my.config.js": defaultConfig
     })
+    .env({ DEBUG: "*" })
     .command([
       "client:codegen",
       "--config=my.config.js",
@@ -343,6 +353,7 @@ describe("client:codegen", () => {
       "queryOne.graphql": simpleQuery.toString(),
       "my.config.js": defaultConfig
     })
+    .env({ DEBUG: "*" })
     .command([
       "client:codegen",
       "--config=my.config.js",
@@ -361,6 +372,7 @@ describe("client:codegen", () => {
       "queryOne.graphql": simpleQuery.toString(),
       "my.config.js": defaultConfig
     })
+    .env({ DEBUG: "*" })
     .command([
       "client:codegen",
       "--target=json",
@@ -397,7 +409,7 @@ describe("client:codegen", () => {
   //       }
   //     `
   //   })
-  //   .command(["client:codegen", "--target=typescript", "--config=my.config.js"])
+  //   .env({DEBUG: '*'}).command(["client:codegen", "--target=typescript", "--config=my.config.js"])
   //   .it(
   //     "writes TypeScript types into a __generated__ directory next to sources when no output is set",
   //     () => {
@@ -433,7 +445,7 @@ describe("client:codegen", () => {
   //       }
   //     `
   //   })
-  //   .command(["client:codegen", "--target=flow", "--config=my.config.js"])
+  //   .env({DEBUG: '*'}).command(["client:codegen", "--target=flow", "--config=my.config.js"])
   //   .it(
   //     "writes flow types into a __generated__ directory next to sources when no output is set",
   //     () => {
@@ -466,7 +478,7 @@ describe("client:codegen", () => {
   //       }
   //     `
   //   })
-  //   .command([
+  //   .env({DEBUG: '*'}).command([
   //     "client:codegen",
   //     "--config=my.config.js",
   //     "--target=typescript",
@@ -505,7 +517,7 @@ describe("client:codegen", () => {
   //       }
   //     `
   //   })
-  //   .command([
+  //   .env({DEBUG: '*'}).command([
   //     "client:codegen",
   //     "--config=my.config.js",
   //     "--target=typescript",
@@ -542,7 +554,7 @@ describe("client:codegen", () => {
   //       }
   //   `
   //   })
-  //   .command([
+  //   .env({DEBUG: '*'}).command([
   //     "client:codegen",
   //     "--config=my.config.js",
   //     "--target=flow",
@@ -578,7 +590,7 @@ describe("client:codegen", () => {
   //       }
   //     `
   //   })
-  //   .command([
+  //   .env({DEBUG: '*'}).command([
   //     "client:codegen",
   //     "--config=my.config.js",
   //     "--target=typescript",
@@ -615,7 +627,7 @@ describe("client:codegen", () => {
   //       }
   //     `
   //   })
-  //   .command(["client:codegen", "--config=my.config.js", "--target=flow", ""])
+  //   .env({DEBUG: '*'}).command(["client:codegen", "--config=my.config.js", "--target=flow", ""])
   //   .it(
   //     "writes flow types next to sources when output is set to empty string",
   //     () => {
@@ -644,6 +656,7 @@ describe("client:codegen", () => {
         }
     `
     })
+    .env({ DEBUG: "*" })
     .command([
       "client:codegen",
       "--config=my.config.js",
@@ -677,6 +690,7 @@ describe("client:codegen", () => {
         }
     `
     })
+    .env({ DEBUG: "*" })
     .command([
       "client:codegen",
       "--config=my.config.js",
@@ -693,12 +707,14 @@ describe("client:codegen", () => {
 describe("error handling", () => {
   test
     .fs(defaultFiles)
+    .env({ DEBUG: "*" })
     .command(["client:codegen", "--config=my.config.js", "--target=foobar"])
     .catch(err => expect(err.message).toMatch(/Unsupported target: foobar/))
     .it("errors with an unsupported target");
 
   test
     .fs(defaultFiles)
+    .env({ DEBUG: "*" })
     .command(["client:codegen", "--config=my.config.js", "--target=swift"])
     .catch(err =>
       expect(err.message).toMatch(/The output path must be specified/)
@@ -707,6 +723,7 @@ describe("error handling", () => {
 
   test
     .fs(defaultFiles)
+    .env({ DEBUG: "*" })
     .command(["client:codegen", "--config=my.config.js", "output-file"])
     .catch(err => expect(err.message).toMatch(/Missing required flag/))
     .it("errors when no target specified");
